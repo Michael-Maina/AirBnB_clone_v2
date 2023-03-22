@@ -31,7 +31,6 @@ def type_parser(arg):
         arg = float(arg)
     return arg
 
-
 class HBNBCommand(cmd.Cmd):
     """ Contains the functionality for the HBNB console"""
 
@@ -94,7 +93,7 @@ class HBNBCommand(cmd.Cmd):
                 if pline:
                     # check for *args or **kwargs
                     if pline[0] == '{' and pline[-1] == '}'\
-                            and type(eval(pline)) is dict:
+                            and type(eval(pline)) == dict:
                         _args = pline
                     else:
                         _args = pline.replace(',', '')
