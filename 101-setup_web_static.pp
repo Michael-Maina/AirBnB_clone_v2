@@ -35,7 +35,7 @@ file { 'current':
 }
 
 exec { 'chown':
-  command => 'sudo -R ubuntu:ubuntu /data/ ',
+  command => 'sudo chown -R ubuntu:ubuntu /data/ ',
   path    => ['/usr/bin', '/bin'],
   require => File['current'],
 }
