@@ -1,30 +1,23 @@
 #!/usr/bin/python3
-"""
-script that distributes archive to webservers
-"""
-import os.path
-from fabric.api import *
-from fabric.operations import run, put, sudo
+"""Deploys web_static on the servers listed"""
+from fabric.api import run, put, env, with_settings
+
+
 env.hosts = ['100.26.172.132', '54.209.159.164']
 
 
+@with_settings(warn_only=True)
 def do_deploy(archive_path):
-    """ deploy """
-    if (os.path.isfile(archive_path) is False):
-        return False
+    """ships and unpacks the .tgv file"""
+    file_name = archive_path.split('/')[-1]
+    folder_extract = file_name.replace(".tgz", "")
 
-    try:
-        new_comp = archive_path.split("/")[-1]
-        new_folder = ("/data/web_static/releases/" + new_comp.split(".")[0])
-        put(archive_path, "/tmp/")
-        run("sudo mkdir -p {}".format(new_folder))
-        run("sudo tar -xzf /tmp/{} -C {}".
-            format(new_comp, new_folder))
-        run("sudo rm /tmp/{}".format(new_comp))
-        run("sudo mv {}/web_static/* {}/".format(new_folder, new_folder))
-        run("sudo rm -rf {}/web_static".format(new_folder))
-        run('sudo rm -rf /data/web_static/current')
-        run("sudo ln -s {} /data/web_static/current".format(new_folder))
-        return True
-    except:
-        return False
+    put(archive_path, '/tmp')
+    run('mkdir -p /data/web_static/releases/{}'.format(folder_extract))
+    run('tar -xzf /tmp/{} -C /data/web_static/releases/{}'.format(file_name, folder_extract))
+
+    run('rm /tmp/{}'.format(file_name))
+    run('mv -f /data/web_static/releases/{}/web_static/* /data/web_static/releases/{}'.format(folder_extract, folder_extract))
+    run('rm -rf /data/web_static/releases/{}/web_static'.format(folder_extract))
+    run('rm -rf /data/web_static/current')
+    run('ln -s /data/web_static/releases/{}/ /data/web_static/current'.format(folder_extract))

@@ -1,55 +1,55 @@
 #!/usr/bin/python3
-"""
-file to practice use of Fabric
-"""
-import os.path
-from fabric.api import *
-from fabric.operations import run, put, sudo
-import time
+"""Creates an archive for the web_static folder"""
+from fabric.api import local, task, runs_once
+from datetime import datetime
+from fabric.api import run, put, env, with_settings
+
+
 env.hosts = ['100.26.172.132', '54.209.159.164']
 
 
+@runs_once
+@with_settings(warn_only=True)
 def do_pack():
-    """
-    compress before sending
-    """
-    timestr = time.strftime("%Y%m%d%H%M%S")
+    """Executes commands locally to create archive"""
     try:
+        time = datetime.now()
+        str_time = time.strftime("%Y%m%d%H%M%S")
         local("mkdir -p versions")
-        local("tar -cvzf versions/web_static_{}.tgz web_static/".
-              format(timestr))
-        return ("versions/web_static_{}.tgz".format(timestr))
-    except:
+        archive_name = "versions/web_static_{}.tgz".format(str_time)
+        execute = local("tar -czvf {} web_static".format(archive_name))
+        return archive_name
+    except Exception:
         return None
 
 
+@with_settings(warn_only=True)
 def do_deploy(archive_path):
-    """ deploy """
-    if (os.path.isfile(archive_path) is False):
-        return False
+    """ships and unpacks the .tgv file"""
+    file_name = archive_path.split('/')[-1]
+    folder_extract = file_name.replace(".tgz", "")
 
-    try:
-        new_comp = archive_path.split("/")[-1]
-        new_folder = ("/data/web_static/releases/" + new_comp.split(".")[0])
-        put(archive_path, "/tmp/")
-        run("sudo mkdir -p {}".format(new_folder))
-        run("sudo tar -xzf /tmp/{} -C {}".
-            format(new_comp, new_folder))
-        run("sudo rm /tmp/{}".format(new_comp))
-        run("sudo mv {}/web_static/* {}/".format(new_folder, new_folder))
-        run("sudo rm -rf {}/web_static".format(new_folder))
-        run('sudo rm -rf /data/web_static/current')
-        run("sudo ln -s {} /data/web_static/current".format(new_folder))
-        return True
-    except:
-        return False
+    put(archive_path, '/tmp')
+    run('mkdir -p /data/web_static/releases/{}'.format(folder_extract))
+    run('tar -xzf /tmp/{} -C /data/web_static/releases/{}'.format(file_name, folder_extract))
+
+    run('rm /tmp/{}'.format(file_name))
+    run('mv -f /data/web_static/releases/{}/web_static/* /data/web_static/releases/{}'.format(folder_extract, folder_extract))
+    run('rm -rf /data/web_static/releases/{}/web_static'.format(folder_extract))
+    run('rm -rf /data/web_static/current')
+    run('ln -s /data/web_static/releases/{}/ /data/web_static/current'.format(folder_extract))
 
 
+@task
 def deploy():
-    """ deploy static """
-    try:
-        archive_address = do_pack()
-        val = do_deploy(archive_address)
-        return val
-    except:
+    """_summary_
+
+    Returns:
+        _type_: _description_
+    """
+    archive_name = do_pack()
+
+    if archive_name == None:
         return False
+    else:
+        do_deploy(archive_name)
