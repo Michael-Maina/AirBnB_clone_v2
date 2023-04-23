@@ -9,6 +9,7 @@ Routes:
 /c/<text>: display “C ” followed by the value of the text variable
 """
 from flask import Flask
+from urllib.parse import unquote
 from markupsafe import escape
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -24,9 +25,9 @@ def hbnb():
     return "HBNB"
 
 
-@app.route("/c/<text>")
+@app.route("/c/<path:text>")
 def c(text):
-    text.replace("_", " ")
+    text = unquote(text.replace("_", " "))
     return "C {}".format(escape(text))
 
 
